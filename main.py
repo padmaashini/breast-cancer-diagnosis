@@ -26,8 +26,10 @@ class KNN:
         # Calculate the distance between x and all the datapoints in the train dataset
         distances = [np.sqrt(np.sum((trained - x)**2)) for trained in self.train_features]
 
+        # print('distances', sum(distances)/len(distances))
         # Constraint - only classify based on certain radius
-
+        # Some notes for us: ideally I wanted to do a distance of 6, but it didn't work due to outliers
+        distances = list(filter(lambda d: d <= 20, distances))
 
         # Sort by distance and return indices of the first k neighbors
         k_indices = np.argsort(distances)[:self.k]
