@@ -1,5 +1,6 @@
 # Breast Cancer Diagnoss
 
+## Setup
 - Clone the repo
 - Activate your environment by running: 
     - On a bash shell: `source venv/Scripts/activate`
