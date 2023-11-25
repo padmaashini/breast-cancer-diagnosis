@@ -9,8 +9,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.decomposition import PCA
 from sklearn.metrics import confusion_matrix
-from sklearn.neighbors import KNeighborsClassifier
-from matplotlib.colors import ListedColormap
 
 class KNN: 
     def __init__(self, k):
@@ -97,7 +95,6 @@ def main():
     plt.xlabel('Principal Component 1')
     plt.ylabel('Principal Component 2')
     plt.show()
-
 
 if __name__ == '__main__':
     main()
