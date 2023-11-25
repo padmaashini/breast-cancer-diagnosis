@@ -108,9 +108,20 @@ def main():
 
     plot_single_prediction(train_features, test_features, train_labels, prediction)
     
-    
+    # Predict all the test data
+    predictions = classifier.predict_multiple_points(test_features)
+    conf_matrix = confusion_matrix(test_labels, predictions)
+    print("Confusion Matrix:\n", conf_matrix)
 
-    
+    # Plotting the confusion matrix
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(conf_matrix, annot=True, fmt='g', cmap='Blues', 
+                xticklabels=['Benign', 'Malignant'], 
+                yticklabels=['Benign', 'Malignant'])
+    plt.xlabel('Predicted labels')
+    plt.ylabel('True labels')
+    plt.title('Confusion Matrix for Breast Cancer Prediction')
+    plt.show()
 
 if __name__ == '__main__':
     main()
