@@ -10,6 +10,7 @@ import seaborn as sns
 from sklearn.decomposition import PCA
 from sklearn.metrics import confusion_matrix
 from sklearn.neighbors import KNeighborsClassifier
+from matplotlib.colors import ListedColormap
 
 class KNN: 
     def __init__(self, k):
@@ -21,8 +22,7 @@ class KNN:
     
     def predict(self, x):
         # Calculate the distance between x and all the datapoints in the train dataset
-        distances = [np.sqrt(np.sum(trained - x ) ** 2) for trained in self.train_features]
-        print('distances', distances)
+        distances = [np.sqrt(np.sum((trained - x)**2)) for trained in self.train_features]
 
         # Constraint - only classify based on certain radius
 
@@ -41,38 +41,39 @@ def main():
     dataset = datasets.load_breast_cancer()
 
     # Write the dataset to an Excel file
-    df = pd.DataFrame(data=dataset, columns=dataset.feature_names)
+    df = pd.DataFrame(data=dataset.data, columns=dataset.feature_names)
     df['target'] = dataset.target
     
     excel_file_path = "breast_cancer_dataset.xlsx"
     df.to_excel(excel_file_path, index=False)
 
+    # Standardize the features of the dataset
     features = StandardScaler().fit_transform(dataset.data)
     labels = dataset.target
 
-    num_features = features.shape[1]
-    print('features: ', features)
-    print('labels', labels)
-    print('num features', num_features)
+    num_features = features.shape[1] # outputs 30
 
     train_features, test_features, train_labels, test_labels = train_test_split(
-        features, labels, test_size=0.3, stratify=labels
+        features, labels, test_size=0.3, stratify=labels, random_state=42
     )
-    classifier = KNN(k=3)
+
+    # Parameters to change: k
+    k = 20
+    datapoint_to_test = test_features[0]
+
+    classifier = KNN(k)
     classifier.fit(train_features, train_labels)
-    prediction = classifier.predict(test_features[0])
-    print('prediction', prediction)
 
-    # Apply PCA to reduce dimensions to 2
+    # The Wisconsin dataset labels benign as 0 and 1 as malignant cancer 
+    prediction = classifier.predict(datapoint_to_test)
+    print(f"Classification for point {datapoint_to_test}: {prediction}")
+
+    # Apply PCA to reduce dimensions to 2 for visualization purposes
     pca = PCA(n_components=2)
-    X_r = pca.fit_transform(train_features)
 
-    # Initialize and train KNN
-    knn = KNeighborsClassifier(n_neighbors=3)
-    knn.fit(X_r, train_labels)
-
-    # Predict using the reduced dataset
-    predictions = knn.predict(pca.transform(test_features))
+    # Reduce dimensionality --> transforms data into a new coordinate system
+    train_features_reduced_dim = pca.fit_transform(train_features)
+    test_features_reduced_dim = pca.transform(test_features)
 
     # Plotting
     plt.figure(figsize=(10, 6))
@@ -80,10 +81,21 @@ def main():
     lw = 2
 
     for color, i in zip(colors, [0, 1]):
-        plt.scatter(X_r[train_labels == i, 0], X_r[train_labels == i, 1], color=color, alpha=.8, lw=lw,
+        plt.scatter(train_features_reduced_dim[train_labels == i, 0], train_features_reduced_dim[train_labels == i, 1], color=color, alpha=.8, lw=lw,
                     label=f'Class {i}')
+
+    # Highlighting the test point 'x' in a different color
+    test_point_x = test_features_reduced_dim[0][0]
+    test_point_y = test_features_reduced_dim[0][1]
+    plt.scatter(test_point_x, test_point_y, color='red', edgecolor='k', lw=lw, label='Test Point X', s=100)
+
+    prediction_label = "Malignant" if prediction == 1 else "Benign"
+    plt.text(test_point_x, test_point_y, f'{prediction_label} - {prediction}', color='black', fontsize=12)
+
     plt.legend(loc='best', shadow=False, scatterpoints=1)
-    plt.title('PCA of Breast Cancer dataset')
+    plt.title('PCA of Breast Cancer dataset with Test Point X')
+    plt.xlabel('Principal Component 1')
+    plt.ylabel('Principal Component 2')
     plt.show()
 
 
