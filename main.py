@@ -18,7 +18,11 @@ class KNN:
         self.train_features = train_features
         self.train_labels = train_labels
     
-    def predict(self, x):
+    def predict_multiple_points(self, points):
+        labels = [self.predict_single_point(x) for x in points]
+        return labels
+    
+    def predict_single_point(self, x):
         # Calculate the distance between x and all the datapoints in the train dataset
         distances = [np.sqrt(np.sum((trained - x)**2)) for trained in self.train_features]
 
@@ -35,7 +39,7 @@ class KNN:
         most_common = Counter(k_nearest_labels).most_common(1)
         return most_common[0][0]
 
-def main():
+def setup():
     dataset = datasets.load_breast_cancer()
 
     # Write the dataset to an Excel file
@@ -55,17 +59,9 @@ def main():
         features, labels, test_size=0.3, stratify=labels, random_state=42
     )
 
-    # Parameters to change: k
-    k = 20
-    datapoint_to_test = test_features[0]
+    return train_features, test_features, train_labels, test_labels
 
-    classifier = KNN(k)
-    classifier.fit(train_features, train_labels)
-
-    # The Wisconsin dataset labels benign as 0 and 1 as malignant cancer 
-    prediction = classifier.predict(datapoint_to_test)
-    print(f"Classification for point {datapoint_to_test}: {prediction}")
-
+def plot_single_prediction(train_features, test_features, train_labels, prediction): 
     # Apply PCA to reduce dimensions to 2 for visualization purposes
     pca = PCA(n_components=2)
 
@@ -95,6 +91,26 @@ def main():
     plt.xlabel('Principal Component 1')
     plt.ylabel('Principal Component 2')
     plt.show()
+
+def main():
+    train_features, test_features, train_labels, test_labels = setup()
+
+    # Parameters to change: k
+    k = 20
+    datapoint_to_test = test_features[0]
+
+    classifier = KNN(k)
+    classifier.fit(train_features, train_labels)
+
+    # The Wisconsin dataset labels benign as 0 and 1 as malignant cancer 
+    prediction = classifier.predict_single_point(datapoint_to_test)
+    print(f"Classification for point {datapoint_to_test}: {prediction}")
+
+    plot_single_prediction(train_features, test_features, train_labels, prediction)
+    
+    
+
+    
 
 if __name__ == '__main__':
     main()
