@@ -2,6 +2,7 @@
 
 ## Setup
 - Clone the repo
+- Create a virtual environment (only for the first time): `python -m venv venv`
 - Activate your environment by running: 
     - On a bash shell: `source venv/Scripts/activate`
     - Windows Command Prompt: `venv\Scripts\activate.bat`
