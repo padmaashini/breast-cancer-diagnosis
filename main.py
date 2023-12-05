@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.decomposition import PCA
 from sklearn.metrics import confusion_matrix
-
+import math
 class KNN: 
     def __init__(self, k):
         self.k = k
@@ -106,16 +106,31 @@ def main():
     train_features, test_features, train_labels, test_labels = setup()
     results = {}
 
+    # predictions = evaluate_knn(5, 48, train_features, train_labels, test_features, test_labels)
+    # conf_matrix = confusion_matrix(test_labels, predictions)
+    # print("Confusion Matrix:\n", conf_matrix)
+
+    # # Plotting the confusion matrix
+    # plt.figure(figsize=(8, 6))
+    # sns.heatmap(conf_matrix, annot=True, fmt='g', cmap='Blues', 
+    #             xticklabels=['Benign', 'Malignant'], 
+    #             yticklabels=['Benign', 'Malignant'])
+    # plt.xlabel('Predicted labels')
+    # plt.ylabel('True labels')
+    # plt.title('Confusion Matrix for Breast Cancer Prediction')
+    # plt.show()
     # Use ProcessPoolExecutor to run the tasks in parallel
     with concurrent.futures.ProcessPoolExecutor() as executor:
         futures = []
         
         k_end = len(train_features) # 398
-        for k in range(1, k_end + 1, 25):
+        k = 1
+        while k < k_end + 1:
             for search_radius in range(15, 50):
                 # Submit each task to be executed in a separate process
                 futures.append(executor.submit(evaluate_knn, k, search_radius, train_features, train_labels, test_features, test_labels))
-
+                
+            k = math.ceil(k * 1.5)
         for future in concurrent.futures.as_completed(futures):
             accuracy, k, search_radius = future.result()
             print('accuracy', accuracy)
