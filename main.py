@@ -4,7 +4,7 @@ from sklearn import datasets
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from collections import Counter
-
+import concurrent.futures
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.decomposition import PCA
@@ -18,18 +18,18 @@ class KNN:
         self.train_features = train_features
         self.train_labels = train_labels
     
-    def predict_multiple_points(self, points):
-        labels = [self.predict_single_point(x) for x in points]
+    def predict_multiple_points(self, points, search_radius):
+        labels = [self.predict_single_point(x, search_radius) for x in points]
         return labels
     
-    def predict_single_point(self, x):
+    def predict_single_point(self, x, search_radius):
         # Calculate the distance between x and all the datapoints in the train dataset
         distances = [np.sqrt(np.sum((trained - x)**2)) for trained in self.train_features]
 
         # print('distances', sum(distances)/len(distances))
         # Constraint - only classify based on certain radius
         # Some notes for us: ideally I wanted to do a distance of 6, but it didn't work due to outliers
-        distances = list(filter(lambda d: d <= 20, distances))
+        distances = list(filter(lambda d: d <= search_radius, distances))
 
         # Sort by distance and return indices of the first k neighbors
         k_indices = np.argsort(distances)[:self.k]
@@ -94,36 +94,36 @@ def plot_single_prediction(train_features, test_features, train_labels, predicti
     plt.ylabel('Principal Component 2')
     plt.show()
 
-def main():
-    train_features, test_features, train_labels, test_labels = setup()
-
-    # Parameters to change: k
-    k = 20
-    datapoint_to_test = test_features[0]
-
+def evaluate_knn(k, search_radius, train_features, train_labels, test_features, test_labels):
     classifier = KNN(k)
     classifier.fit(train_features, train_labels)
+    predictions = classifier.predict_multiple_points(test_features, search_radius)
+    tn, fp, fn, tp = confusion_matrix(test_labels, predictions).ravel()
+    accuracy = (tp + tn) / len(test_features)
+    return accuracy, k, search_radius
 
-    # The Wisconsin dataset labels benign as 0 and 1 as malignant cancer 
-    prediction = classifier.predict_single_point(datapoint_to_test)
-    print(f"Classification for point {datapoint_to_test}: {prediction}")
+def main():
+    train_features, test_features, train_labels, test_labels = setup()
+    results = {}
 
-    plot_single_prediction(train_features, test_features, train_labels, prediction)
-    
-    # Predict all the test data
-    predictions = classifier.predict_multiple_points(test_features)
-    conf_matrix = confusion_matrix(test_labels, predictions)
-    print("Confusion Matrix:\n", conf_matrix)
+    # Use ProcessPoolExecutor to run the tasks in parallel
+    with concurrent.futures.ProcessPoolExecutor() as executor:
+        futures = []
+        
+        k_end = len(train_features) # 398
+        for k in range(1, k_end + 1, 25):
+            for search_radius in range(15, 50):
+                # Submit each task to be executed in a separate process
+                futures.append(executor.submit(evaluate_knn, k, search_radius, train_features, train_labels, test_features, test_labels))
 
-    # Plotting the confusion matrix
-    plt.figure(figsize=(8, 6))
-    sns.heatmap(conf_matrix, annot=True, fmt='g', cmap='Blues', 
-                xticklabels=['Benign', 'Malignant'], 
-                yticklabels=['Benign', 'Malignant'])
-    plt.xlabel('Predicted labels')
-    plt.ylabel('True labels')
-    plt.title('Confusion Matrix for Breast Cancer Prediction')
-    plt.show()
+        for future in concurrent.futures.as_completed(futures):
+            accuracy, k, search_radius = future.result()
+            print('accuracy', accuracy)
+            results[accuracy] = (k, search_radius)
+
+    max_accuracy = max(results.keys())
+    best_k, best_search_radius = results[max_accuracy]
+    print(f"{max_accuracy}: k - {best_k}, search_radius - {best_search_radius}")
 
 if __name__ == '__main__':
     main()
