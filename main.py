@@ -10,6 +10,7 @@ import seaborn as sns
 from sklearn.decomposition import PCA
 from sklearn.metrics import confusion_matrix
 import math
+
 class KNN: 
     def __init__(self, k):
         self.k = k
@@ -26,9 +27,6 @@ class KNN:
         # Calculate the distance between x and all the datapoints in the train dataset
         distances = [np.sqrt(np.sum((trained - x)**2)) for trained in self.train_features]
 
-        # print('distances', sum(distances)/len(distances))
-        # Constraint - only classify based on certain radius
-        # Some notes for us: ideally I wanted to do a distance of 6, but it didn't work due to outliers
         distances = list(filter(lambda d: d <= search_radius, distances))
 
         # Sort by distance and return indices of the first k neighbors
@@ -119,7 +117,8 @@ def main():
     # plt.ylabel('True labels')
     # plt.title('Confusion Matrix for Breast Cancer Prediction')
     # plt.show()
-    # Use ProcessPoolExecutor to run the tasks in parallel
+
+    # Run tasks in parallel
     with concurrent.futures.ProcessPoolExecutor() as executor:
         futures = []
         
@@ -129,7 +128,6 @@ def main():
             for search_radius in range(15, 50):
                 # Submit each task to be executed in a separate process
                 futures.append(executor.submit(evaluate_knn, k, search_radius, train_features, train_labels, test_features, test_labels))
-                
             k = math.ceil(k * 1.5)
         for future in concurrent.futures.as_completed(futures):
             accuracy, k, search_radius = future.result()
